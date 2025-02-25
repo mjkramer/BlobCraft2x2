@@ -22,7 +22,7 @@ def main():
     args = ap.parse_args()
 
     with open(args.index_file, 'rb') as f:
-        path_index = pickle.load(f)
+        path_index: dict[str, str] = pickle.load(f)
 
     conn = sqlite3.connect(args.db_file)
 
@@ -35,7 +35,12 @@ def main():
 
     q = f"SELECT run, subrun, filename FROM {args.table}"
     for run, subrun, filename in conn.execute(q).fetchall():
+        if filename not in path_index:
+            print(f'Cannot find {filename}')
+            continue
+
         path = path_index[filename]
+
         # it's faster to use run and subrun in the WHERE instead of using
         # filename because (run, subrun) is the primary key
         q = f"UPDATE {args.table} SET {args.column}='{path}'" + \

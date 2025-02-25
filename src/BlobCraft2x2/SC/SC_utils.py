@@ -149,10 +149,13 @@ def get_data_2x2():
     }
 
 def get_data_FSD():
-    meas = glob.influxDB.fetch_measurement_data(
-        'fsd_sc', 'PFD-5x5', ['mean("ch-1")'])
-    hv = next(meas.get_points())['mean']
-    return {'HV_kV': hv}
+    try:
+        meas = glob.influxDB.fetch_measurement_data(
+            'fsd_sc', 'PFD-5x5', ['mean("ch-1")'])
+        hv = next(meas.get_points())['mean']
+        return {'HV_kV': hv}
+    except:
+        return {'HV_kV': -1.}
 
 def dump_SC_data(json_filename="", dump_all_data=False, individual=False, output_dir=None):
     config = SC_config
