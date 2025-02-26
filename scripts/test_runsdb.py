@@ -54,8 +54,10 @@ def get_subrun_dict(run, morcs_start, morcs_end):
     lrs_subrun_dict = load_subrun_data(LRS_config, 'lrs_runs_data', 'start_time_unix', 'end_time_unix', 'subrun', 'morcs_run_nr')
     if Mx2_config['enabled']:
         mx2_subrun_dict = load_subrun_data(Mx2_config, 'runsubrun', 'subrunstarttime', 'subrunfinishtime', 'runsubrun', 'runsubrun/10000')
-        # HACK
+        if not mx2_subrun_dict:
+            Mx2_config['enabled'] = False # Ensure other code doesn't crash
         # TODO: Key subrun dict on (run, subrun) instead of subrun
+        # HACK
         if run == 50005:
             run = 50006
             mx2_subrun_dict2 = load_subrun_data(Mx2_config, 'runsubrun', 'subrunstarttime', 'subrunfinishtime', 'runsubrun', 'runsubrun/10000')
