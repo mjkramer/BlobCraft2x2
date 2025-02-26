@@ -20,15 +20,22 @@ def merge_sqlite(dest_file, source_files):
             print(table_name)
 
             if isource == 0:
+                # TODO: Make this not depend on the first file having everything
                 source_cursor.execute(f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table_name}';")
                 create_table_sql = source_cursor.fetchone()[0]
                 dest_cursor.execute(create_table_sql)
+
+            pragma = f"PRAGMA table_info({table_name})"
+            source_cursor.execute(pragma)
+            columns = [row[1] for row in source_cursor.fetchall()]
+            columns = ", ".join(columns)
 
             source_cursor.execute(f"SELECT * FROM {table_name}")
             rows = source_cursor.fetchall()
             if rows:
                 placeholders = ", ".join("?" * len(rows[0]))
-                dest_cursor.executemany(f"INSERT INTO {table_name} VALUES ({placeholders})", rows)
+                q = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+                dest_cursor.executemany(q, rows)
 
         source_conn.close()
 
