@@ -5,15 +5,21 @@ set -o pipefail
 
 runno=$1; shift
 
+rm -f config/crs_runs.db ./CRS_*.SQL.json
 CRS_query --run "$runno"
-
-rm -f config/crs_runs.db
-scripts/json2sqlite.py -i ./CRS_*.SQL.json -o config/crs_runs.db
-rm ./CRS_*.SQL.json
-
-mkdir -p blobs_CRS
-rm -f blobs_CRS/CRS_*.json
-mv CRS_*.json blobs_CRS
+for f in ./CRS_*.SQL.json; do
+    if [[ -e "$f" ]]; then
+        scripts/json2sqlite.py -i "$f" -o config/crs_runs.db
+        rm "$f"
+    fi
+done
+rm -rf blobs_CRS
+mkdir blobs_CRS
+for f in ./CRS_*.json; do
+    if [[ -e "$f" ]]; then
+        mv CRS_*.json blobs_CRS
+    fi
+done
 
 start=$(sqlite3 config/morcs.sqlite "select start_time from run_data where id=$runno" | tr ' ' 'T' | cut -c 1-16)
 # lol
@@ -28,3 +34,5 @@ mkdir -p output
 rm -f "output/runs_$runno.db"
 
 scripts/test_runsdb.py -o "output/runs_$runno" --run "$runno" --start "$start" --end "$end"
+
+rm -rf blobs_CRS config/crs_runs.db

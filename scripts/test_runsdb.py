@@ -50,8 +50,14 @@ def get_subrun_dict(run, morcs_start, morcs_end):
         data = sqlite.get_subruns(table=table, start=start, end=end, subrun=subrun, condition=condition)
         return clean_subrun_dict(data, start=morcs_start, end=morcs_end)
 
-    crs_subrun_dict = load_subrun_data(CRS_config, 'crs_runs_data', 'start_time_unix', 'end_time_unix', 'subrun', 'run')
-    lrs_subrun_dict = load_subrun_data(LRS_config, 'lrs_runs_data', 'start_time_unix', 'end_time_unix', 'subrun', 'morcs_run_nr')
+    try:
+        crs_subrun_dict = load_subrun_data(CRS_config, 'crs_runs_data', 'start_time_unix', 'end_time_unix', 'subrun', 'run')
+    except:
+        crs_subrun_dict = {}
+    try:
+        lrs_subrun_dict = load_subrun_data(LRS_config, 'lrs_runs_data', 'start_time_unix', 'end_time_unix', 'subrun', 'morcs_run_nr')
+    except:
+        lrs_subrun_dict = {}
     if Mx2_config['enabled']:
         mx2_subrun_dict = load_subrun_data(Mx2_config, 'runsubrun', 'subrunstarttime', 'subrunfinishtime', 'runsubrun', 'runsubrun/10000')
         if not mx2_subrun_dict:
@@ -118,8 +124,14 @@ def get_subrun_dict(run, morcs_start, morcs_end):
             global_subrun_dict[global_subrun]['mx2_subrun'] = now_running['mx2'][1]
 
     if global_subrun in global_subrun_dict and global_subrun_dict[global_subrun]['end_time'] is None:
-        last_crs_end_time = max(crs_subrun_dict[subrun]['end_time'] for subrun in crs_subrun_dict)
-        last_lrs_end_time = max(lrs_subrun_dict[subrun]['end_time'] for subrun in lrs_subrun_dict)
+        try:
+            last_crs_end_time = max(crs_subrun_dict[subrun]['end_time'] for subrun in crs_subrun_dict)
+        except:
+            last_crs_end_time = '1970-01-01T00:00:00'
+        try:
+            last_lrs_end_time = max(lrs_subrun_dict[subrun]['end_time'] for subrun in lrs_subrun_dict)
+        except:
+            last_lrs_end_time = '1970-01-01T00:00:00'
         global_subrun_dict[global_subrun]['end_time'] = max(last_crs_end_time,
                                                             last_lrs_end_time)
         if Mx2_config['enabled']:
@@ -151,9 +163,12 @@ def main():
 
     # HACK
     pattern = f'CRS_all_ucondb_measurements_run-{args.run:05d}*.json'
-    path = next(Path('blobs_CRS').glob(pattern))
-    with open(path) as f:
-        CRS_summary = json.load(f)
+    try:
+        path = next(Path('blobs_CRS').glob(pattern))
+        with open(path) as f:
+            CRS_summary = json.load(f)
+    except:
+        CRS_summary = None
 
     # CRS_summary= CRS_blob_maker(run=run, start=start, end=end) #get summary LRS info
     LRS_summary= LRS_blob_maker(run=args.run, start=args.start, end=args.end) #get summary LRS info

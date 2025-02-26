@@ -84,6 +84,9 @@ def CRS_blob_maker(run):
 
             output[subrun] = info
 
+    if not output:
+        return {}
+
     start_subrun, end_subrun = 1, len(output)
     start_str = output[start_subrun]['start_time']
     end_str = output[end_subrun]['end_time']
