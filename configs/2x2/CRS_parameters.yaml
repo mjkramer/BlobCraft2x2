@@ -3,4 +3,4 @@ enabled: true
 filename: "config/crs_runs.db"
 
 # for generating the above
-data_dir: "/data/beam/july8_2024/nominal_hv"
+data_dir: "/global/cfs/cdirs/dune/www/data/2x2/CRS"
