@@ -2,8 +2,6 @@ __pycache__
 *.json
 *.png
 *build
-*.db
-*.sqlite
 *credentials.yaml
 *.key
 *.venv
