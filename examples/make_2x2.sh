@@ -19,3 +19,7 @@ rm output/runs_50006.db
 scripts/merge_sqlite.py "$outname.sqlite" output/runs_*.db
 
 scripts/sqlite2excel.py -o "$outname.xlsx" -i "$outname.sqlite"
+
+scripts/add_path_column.py -i files.2x2.crs_beam.pkl -d "$outname.sqlite" -t CRS_summary -c nersc_path
+
+scripts/add_path_column.py -i files.2x2.lrs_all.pkl -d "$outname.sqlite" -t LRS_summary -c nersc_path
