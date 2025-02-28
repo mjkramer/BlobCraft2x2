@@ -7,9 +7,10 @@ import pickle
 
 def main():
     ap = argparse.ArgumentParser()
+    # 2x2: /global/cfs/cdirs/dune/www/data/2x2/CRS
     ap.add_argument('-p', '--path',
                     help='Path to scan',
-                    required=True)
+                    default='/global/cfs/cdirs/dune/www/data/FSD/CRS/CRS')
     ap.add_argument('-e', '--ext',
                     help='File extension (e.g.: h5, hdf5, data)',
                     required=True)
@@ -19,11 +20,14 @@ def main():
     ap.add_argument('-b', '--binary2packet',
                     help='convert charge paths from binary to packet',
                     action='store_true')
-    ap.add_argument('-B', '--binary-dir',
-                    default='/global/cfs/cdirs/dune/www/data/FSD/CRS/CRS')
+    ap.add_argument('-B', '--binary-dir')
+    # 2x2: /global/cfs/cdirs/dune/www/data/2x2/nearline/packet
     ap.add_argument('-P', '--packet-dir',
                     default='/global/cfs/cdirs/dune/www/data/FSD/nearline/packet/CRS')
     args = ap.parse_args()
+
+    if not args.binary_dir:
+        args.binary_dir = args.path
 
     result = {}
 
