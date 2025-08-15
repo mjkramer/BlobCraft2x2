@@ -2,8 +2,8 @@ __pycache__
 *.json
 *.png
 *build
-*.db
 *credentials.yaml
 *.key
 *.venv
 *.egg-info
+/config
