@@ -11,12 +11,12 @@ scp acd-daq02.fnal.gov:/data/morcs/MORCS/morcs.sqlite config/
 
 scripts/build_file_index.py -o config/files.2x2_run2.crs.pkl \
     --binary2packet --ext h5 \
-    --path /global/cfs/cdirs/dune/www/data/2x2/CRS.run2/ColdOperations/data/2025_Operations_Cold \
-    --packet-dir /global/cfs/cdirs/dune/www/data/2x2/nearline_run2/packet/ColdOperations/data/2025_Operations_Cold
+    --path /dvs_ro/cfs/cdirs/dune/www/data/2x2/CRS.run2/ColdOperations/data/2025_Operations_Cold \
+    --packet-dir /dvs_ro/cfs/cdirs/dune/www/data/2x2/nearline_run2/packet/ColdOperations/data/2025_Operations_Cold
 
 scripts/build_file_index.py -o config/files.2x2_run2.lrs.pkl \
     --ext data \
-    --path /global/cfs/cdirs/dune/www/data/2x2/LRS_run2
+    --path /dvs_ro/cfs/cdirs/dune/www/data/2x2/LRS_run2
 
 seq $minrun $maxrun | parallel -u -j 10 scripts/make_db.sh
 
