@@ -5,21 +5,20 @@ set -o pipefail
 
 runno=$1; shift
 
-rm -f config/crs_runs.db ./CRS_*.SQL.json
+rm -f config/crs_runs.db-$runno ./CRS_all_ucondb_measurements_run-$runno*.SQL.json
 CRS_query --run "$runno"
-for f in ./CRS_*.SQL.json; do
-    if [[ -e "$f" ]]; then
-        scripts/json2sqlite.py -i "$f" -o config/crs_runs.db
-        rm "$f"
+for f in ./CRS_all_ucondb_measurements_run-$runno*.SQL.json; do
+    if [[ ! -e "$f"  ]]; then   # no matching files, so $f is literally ./CRS_all_ucondb_measurements_run-$runno*.SQL.json
+        echo "No CRS data for run $runno. Bailing."
+        exit 1
     fi
+    scripts/json2sqlite.py -i "$f" -o config/crs_runs.db-$runno
+    rm "$f"
 done
-rm -rf blobs_CRS
-mkdir blobs_CRS
-for f in ./CRS_*.json; do
-    if [[ -e "$f" ]]; then
-        mv CRS_*.json blobs_CRS
-    fi
-done
+
+rm -rf blobs_CRS-$runno
+mkdir blobs_CRS-$runno
+mv ./CRS_all_ucondb_measurements_run-$runno*.json blobs_CRS-$runno
 
 start=$(sqlite3 config/morcs.sqlite "select start_time from run_data where id=$runno" | tr ' ' 'T' | cut -c 1-16)
 # lol
@@ -35,4 +34,4 @@ rm -f "output/runs_$runno.db"
 
 scripts/test_runsdb.py -o "output/runs_$runno" --run "$runno" --start "$start" --end "$end"
 
-rm -rf blobs_CRS config/crs_runs.db
+rm -rf blobs_CRS-$runno config/crs_runs.db-$runno

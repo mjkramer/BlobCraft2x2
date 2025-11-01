@@ -46,7 +46,11 @@ def clean_global_subrun_dict(global_subrun_dict, run): #remove really small subr
 
 def get_subrun_dict(run, morcs_start, morcs_end):
     def load_subrun_data(config, table, start, end, subrun, condition):
-        sqlite = SQLiteDBManager(run=run, filename=config.get('filename'))
+        filename = config.get('filename')
+        if table == 'crs_runs_data':
+            filename += f'-{run}'
+
+        sqlite = SQLiteDBManager(run=run, filename=filename)
         data = sqlite.get_subruns(table=table, start=start, end=end, subrun=subrun, condition=condition)
         return clean_subrun_dict(data, start=morcs_start, end=morcs_end)
 
@@ -168,7 +172,7 @@ def main():
     # HACK
     pattern = f'CRS_all_ucondb_measurements_run-{args.run:05d}*.json'
     try:
-        path = next(Path('blobs_CRS').glob(pattern))
+        path = next(Path(f'blobs_CRS-{args.run:05d}').glob(pattern))
         with open(path) as f:
             CRS_summary = json.load(f)
     except:
