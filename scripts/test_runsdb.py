@@ -161,6 +161,10 @@ def main():
 
     query_start = datetime.now()
 
+    # HACK to work around invalid end_time in MORCs DB
+    if args.end < args.start:
+        args.end = None
+
     # HACK
     pattern = f'CRS_all_ucondb_measurements_run-{args.run:05d}*.json'
     try:
