@@ -7,7 +7,7 @@ maxrun=60070
 
 ln -sf configs/2x2_run2 config
 cp /global/cfs/cdirs/dune/www/data/2x2/LRS_det_config_run2/lrsdetconfig.db config/
-scp acd-daq02.fnal.gov:/data/morcs/MORCS/morcs.sqlite config/
+cp /global/cfs/cdirs/dune/www/data/2x2/DB/morcs/run2/morcs.sqlite config/
 
 scripts/build_file_index.py -o config/files.2x2_run2.crs.pkl \
     --binary2packet --ext h5 \
