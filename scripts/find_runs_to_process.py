@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import sqlite3
 import numpy as np
 import pandas as pd
@@ -7,6 +8,11 @@ import re
 import os
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--minrun', type=int)
+    ap.add_argument('--maxrun', type=int)
+    args = ap.parse_args()
+
     morcs_db='config/morcs.sqlite'
     # find list of runs from sqlite
     conn = sqlite3.connect(morcs_db)
@@ -30,6 +36,12 @@ def main():
         runs_processed.pop()
 
     runs_to_process = sqlite_runs[~np.isin(sqlite_runs, runs_processed)]
+
+    if args.minrun:
+        runs_to_process = runs_to_process[runs_to_process >= args.minrun]
+    if args.maxrun:
+        runs_to_process = runs_to_process[runs_to_process <= args.maxrun]
+
     print(f'Need to add the following runs to the DB: {runs_to_process}')
     
     np.savetxt('runs_to_process.txt', runs_to_process, fmt="%d")

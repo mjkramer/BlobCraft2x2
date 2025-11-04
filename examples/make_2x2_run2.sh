@@ -3,13 +3,13 @@
 outname=2x2runs_run2_v0.0.0.1
 
 minrun=60000
-maxrun=60070
+maxrun=65000
 
 ln -sf configs/2x2_run2 config
 cp /global/cfs/cdirs/dune/www/data/2x2/LRS_det_config_run2/lrsdetconfig.db config/
 cp /global/cfs/cdirs/dune/www/data/2x2/DB/morcs/run2/morcs.sqlite config/
 
-scripts/find_runs_to_process.py
+scripts/find_runs_to_process.py --minrun $minrun --maxrun $maxrun
 
 scripts/build_file_index.py -o config/files.2x2_run2.crs.pkl \
     --binary2packet --ext h5 \
@@ -20,7 +20,7 @@ scripts/build_file_index.py -o config/files.2x2_run2.lrs.pkl \
     --ext data \
     --path /dvs_ro/cfs/cdirs/dune/www/data/2x2/LRS_run2
 
-seq "$minrun" "$maxrun" | sort -n | comm -12 - <(sort -n runs_to_process.txt) | parallel -u -j 10 scripts/make_db.sh
+cat runs_to_process.txt | parallel -u -j 10 scripts/make_db.sh
 
 rm -f "$outname.sqlite"
 scripts/merge_sqlite.py "$outname.sqlite" output/runs_*.db
