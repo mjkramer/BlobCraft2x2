@@ -3,6 +3,8 @@
 set -o errexit
 set -o pipefail
 
+export HDF5_USE_FILE_LOCKING=FALSE
+
 runno=$1; shift
 
 rm -f config/crs_runs.db-$runno ./CRS_all_ucondb_measurements_run-$runno*.SQL.json
