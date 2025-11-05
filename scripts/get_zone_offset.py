@@ -5,8 +5,9 @@ import sys
 
 from BlobCraft2x2 import local_tz
 
-# do nothing rather than crash
-if len(sys.argv) == 1:
+# when morcs end_time is blank (like for the current run),
+# do nothing, instead of crashing
+if sys.argv[1] == '':
     sys.exit()
 
 datetime_str = sys.argv[1]
