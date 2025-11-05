@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
-outname=2x2runs_run2_v0.0.0.1
+outname=2x2runs_run2
 
 minrun=60000
 maxrun=65000
 
 ln -sf configs/2x2_run2 config
-cp /global/cfs/cdirs/dune/www/data/2x2/LRS_det_config_run2/lrsdetconfig.db config/
-cp /global/cfs/cdirs/dune/www/data/2x2/DB/morcs/run2/morcs.sqlite config/
+cp -f /global/cfs/cdirs/dune/www/data/2x2/LRS_det_config_run2/lrsdetconfig.db config/
+cp -f /global/cfs/cdirs/dune/www/data/2x2/DB/morcs/run2/morcs.sqlite config/
 
+mkdir -p output
 scripts/find_runs_to_process.py --minrun $minrun --maxrun $maxrun
 
 scripts/build_file_index.py -o config/files.2x2_run2.crs.pkl \
