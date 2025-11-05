@@ -5,6 +5,10 @@ import sys
 
 from BlobCraft2x2 import local_tz
 
+# do nothing rather than crash
+if len(sys.argv) == 1:
+    sys.exit()
+
 datetime_str = sys.argv[1]
 
 t = DT.datetime.fromisoformat(datetime_str)
