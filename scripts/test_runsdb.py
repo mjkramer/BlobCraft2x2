@@ -12,6 +12,7 @@ from BlobCraft2x2.DB import SQLiteDBManager
 from BlobCraft2x2.DataManager import dump, clean_subrun_dict
 from BlobCraft2x2.DataManager import parse_datetime
 from BlobCraft2x2 import CRS_config, LRS_config, Mx2_config, SC_config, IFbeam_config
+import BlobCraft2x2
 
 # run=50014
 # start="2024-07-08T11:42:18"
@@ -44,7 +45,7 @@ def clean_global_subrun_dict(global_subrun_dict, run): #remove really small subr
         new_global_subrun_id += 1
     return final_global_subrun_dict
 
-def get_subrun_dict(run, morcs_start, morcs_end):
+def get_subrun_dict(run, morcs_start, morcs_end, morcs_source):
     def load_subrun_data(config, table, start, end, subrun, condition):
         filename = config.get('filename')
         if table == 'crs_runs_data':
@@ -122,6 +123,7 @@ def get_subrun_dict(run, morcs_start, morcs_end):
             'crs_subrun': now_running['crs'][1],
             'lrs_run': now_running['lrs'][0],
             'lrs_subrun': now_running['lrs'][1],
+            'source': morcs_source,
         }
         if Mx2_config['enabled']:
             global_subrun_dict[global_subrun]['mx2_run'] = now_running['mx2'][0]
@@ -155,19 +157,42 @@ def get_subrun_dict(run, morcs_start, morcs_end):
     return final_global_subrun_dict
 
 
+def zoneify(datetime_str: str):
+    t = datetime.fromisoformat(datetime_str)
+    # won't work for silly timezones
+    offset = BlobCraft2x2.local_tz.utcoffset(t).seconds // 3600
+    prefix = '-' if offset < 0 else '+'
+    offset_str = f'{prefix}{abs(offset):02}:00'
+    return datetime_str[:19].replace(' ', 'T') + offset_str
+
+
+def get_morcs_info(morcs_mgr: SQLiteDBManager):
+    conds = [f"id = {morcs_mgr.run}"]
+    cols = ['start_time', 'end_time', 'source']
+    rows = morcs_mgr.query_data('run_data', conds, cols)
+    assert len(rows) == 1
+    start, end, source = rows[0]
+    return zoneify(start), zoneify(end), source
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--run', type=int, default=50014)
-    ap.add_argument('--start', default="2024-07-08T11:42:18")
-    ap.add_argument('--end', default="2024-07-08T13:35:51")
     ap.add_argument('-o', '--output')
+    ap.add_argument('--morcs-db')
     args = ap.parse_args()
+
+    morcs_mgr = SQLiteDBManager(args.morcs_db, args.run)
+    morcs_start, morcs_end, morcs_source = get_morcs_info(morcs_mgr)
+
+    # morcs_start = parse_datetime(morcs_start, is_start=True)
+    # morcs_end = parse_datetime(morcs_end, is_start=False)
 
     query_start = datetime.now()
 
     # HACK to work around invalid end_time in MORCs DB
-    if args.end < args.start:
-        args.end = None
+    if morcs_end < morcs_start:
+        morcs_end = None
 
     # HACK
     pattern = f'CRS_all_ucondb_measurements_run-{args.run:05d}*.json'
@@ -179,21 +204,19 @@ def main():
         CRS_summary = None
 
     # CRS_summary= CRS_blob_maker(run=run, start=start, end=end) #get summary LRS info
-    LRS_summary= LRS_blob_maker(run=args.run, start=args.start, end=args.end) #get summary LRS info
+    LRS_summary= LRS_blob_maker(run=args.run, start=morcs_start, end=morcs_end) #get summary LRS info
 
     if Mx2_config['enabled']:
-        Mx2_summary= Mx2_blob_maker(run=args.run, start=args.start, end=args.end) #get summary Mx2 info
+        Mx2_summary= Mx2_blob_maker(run=args.run, start=morcs_start, end=morcs_end) #get summary Mx2 info
         # HACK
         if args.run == 50005:
-            Mx2_summary2 = Mx2_blob_maker(run=50006, start=args.start, end=args.end) #get summary Mx2 info
+            Mx2_summary2 = Mx2_blob_maker(run=50006, start=morcs_start, end=morcs_end) #get summary Mx2 info
 
     #LRS_blob_maker(run=run, start=start, end=end, dump_all_data=True)   #dumps all tables in LRS DB into a json blob
     #Mx2_blob_maker(run=run, start=start, end=end, dump_all_data=True)   #dumps all tables in Mx2 DB into a json blob
 
-    # morcs_start = parse_datetime(args.start, is_start=True)
-    # morcs_end = parse_datetime(args.end, is_start=False)
     # subrun_dict = get_subrun_dict(args.run, morcs_start, morcs_end)
-    subrun_dict = get_subrun_dict(args.run, args.start, args.end)
+    subrun_dict = get_subrun_dict(args.run, morcs_start, morcs_end, morcs_source)
 
     if SC_config['enabled']:
         SC_beam_summary = SC_blob_maker(measurement_name="runsdb", run_number=args.run, subrun_dict=subrun_dict) #get summary SC data for a given subrun_dict
@@ -202,7 +225,7 @@ def main():
 
     filename = args.output
     if not filename:
-        filename =  f'Runsdb_run_{args.run}_{args.start}_{args.end}'
+        filename =  f'Runsdb_run_{args.run}_{morcs_start}_{morcs_end}'
 
     #dump summary into sqlite db
     dump(subrun_dict, filename=filename, format='sqlite-global', tablename='All_global_subruns', is_global_subrun=True)
