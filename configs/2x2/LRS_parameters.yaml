@@ -26,6 +26,7 @@ lrs_runs_data_summary:
   - first_event_tai
   - last_event_tai
   - active_moas
+  - active_foas
 
 # moas_versions:
 #   - config_id

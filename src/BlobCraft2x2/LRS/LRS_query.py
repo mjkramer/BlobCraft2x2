@@ -1,9 +1,43 @@
 import argparse
+import json
+import warnings
 import yaml
 from ..DB import SQLiteDBManager
 from ..DataManager import dump, unix_to_iso, clean_subrun_dict
 from ..Beam.beam_query import get_beam_summary
 from .. import IFbeam_config, LRS_config
+
+
+def get_trigger_info(sqlite: SQLiteDBManager, conditions: list[str]) \
+        -> dict:
+    runctl_data = sqlite.query_data(table_name='lrs_runs_data',
+                                    conditions=conditions,
+                                    columns=['afi_runcontrol_json'])[0][0]
+    d = json.loads(runctl_data)
+    result = {}
+
+    src_mask = d['config']['rcTrigConfig']['trig']['trigSrc']
+    src_labels = ['Spill', 'LED', 'Trig', 'Self']
+    enabled = [label for i, label in enumerate(src_labels)
+               if src_mask & (1<<i)]
+    result['trig_type'] = ';'.join(sorted(enabled))
+
+    is_spill = bool(src_mask & 1)
+    spill_cfg = d['config']['rcTrigConfig']['dlnpCalibrationTrigger']
+    cfg_keys = ['count', 'period', 'offset']
+    panik = f'Inconsistent trigger info for {conditions}, mask={src_mask}'
+
+    if is_spill:
+        if not spill_cfg['en']:
+            warnings.warn(panik)
+        result.update({f'readout_{k}': spill_cfg[k] for k in cfg_keys})
+    else:
+        if spill_cfg['en']:
+            warnings.warn(panik)
+        result.update({f'readout_{k}': 0 for k in cfg_keys})
+
+    return result
+
 
 def LRS_blob_maker(run, start=None, end=None, dump_all_data=False):
     print(f"\n----------------------------------------Fetching LRS data for the run {run}----------------------------------------")
@@ -31,9 +65,10 @@ def LRS_blob_maker(run, start=None, end=None, dump_all_data=False):
             moas_columns = sqlite.get_column_names('moas_versions')
 
         db_subrun = config.get('db_subrun_factor', 0) * run + subrun
-        meta_rows = sqlite.query_data(table_name='lrs_runs_data', conditions=[f"morcs_run_nr=={run}", f"subrun=={db_subrun}"], columns=meta_columns)
+        subrun_conds = [f"morcs_run_nr=={run}", f"subrun=={db_subrun}"]
+        meta_rows = sqlite.query_data(table_name='lrs_runs_data', conditions=subrun_conds,
+                                      columns=meta_columns)
         data = [dict(zip(meta_columns, row)) for row in meta_rows]
-
 
         if not data:
             continue
@@ -56,14 +91,19 @@ def LRS_blob_maker(run, start=None, end=None, dump_all_data=False):
         if len(moas_data) > 1:
             raise ValueError(f"ERROR: Multiple MOAS versions found for this run/subrun {moas_version}")
         moas_dict = [dict(zip(moas_columns, row)) for row in moas_data]
-
         data[0].update(moas_dict[0])
+
+        trig_info = get_trigger_info(sqlite, subrun_conds)
+        data[0].update(trig_info)
+
         if IFbeam_config['enabled']:
             data[0]["beam_summary"] = get_beam_summary(times['start_time'], times['end_time'])
+
         output[subrun] = data[0]
         output[subrun]['run'] = run
 
-        if not dump_all_data: continue
+        if not dump_all_data:
+            continue
 
         moas_channels_columns = config.get('moas_channels', [])
         config_ids = [moas_row['config_id'] for moas_row in moas_dict]
